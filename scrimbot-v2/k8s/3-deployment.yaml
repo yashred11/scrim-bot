@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discord-bot-deployment
+  namespace: scrim-discord-bot
+spec:
+  selector:
+    matchLabels:
+      app: discord-bot
+  replicas: 1
+  # Never run the old and new pod together during a rollout.
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: discord-bot
+    spec:
+      terminationGracePeriodSeconds: 20
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: discord-bot-container
+          image: ghcr.io/thomask33/scrimbot:REPLACE_VERSION_IN_CI
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=192"
+          envFrom:
+            - configMapRef:
+                name: bot-config
+            - secretRef:
+                name: bot-secret
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 96Mi

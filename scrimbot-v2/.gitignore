@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.env
+k8s/2-secrets.yaml
+*.log
